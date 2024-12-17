@@ -27,6 +27,8 @@ def get_auditboard_data(auditboard_vendors, auditboard_vendor_ids, file_path, id
             file.write(f'{item}\n')
 
     print(f'Processed {len(auditboard_vendors)} vendors as auditable entities')
+    
+    return auditboard_vendors
 
 def get_auditboard_entity(entity_id):
     response = requests.get(AUDITBOARD_URL + AUDITABLE_ENTITIES + '/' + entity_id, headers=HEADERS_AUDITBOARD)

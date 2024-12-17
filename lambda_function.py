@@ -1,3 +1,4 @@
+import json
 import time
 import asyncio
 from auditboard.get import get_auditboard_data, get_custom_field_options
@@ -11,7 +12,6 @@ from mapping import field_mapping
 import requests
 import re
 import os
-import shutil
 
 # Initialize variables
 auditboard_vendors = {}
@@ -21,28 +21,26 @@ upguard_file_path = './data/upgaurd.json'
 auditboard_file_path = './data/auditboard.json'
 auditboard_user_file_path = './data/users.json'
 
-folder_path = './data/'
+upgaurd_file = ""
+auditboard_file = ""
 
-# Remove all contents of the 'data' folder
-shutil.rmtree(folder_path)
-# Recreate the 'data' folder
-os.makedirs(folder_path)
 
-# Fetch data if files do not exist
-if not os.path.exists(upguard_file_path):
-    start_time = time.time()
-    asyncio.run(get_all_vendors(upguard_file_path))
-    print(f"Upguard data retrieval time: {time.time() - start_time:.2f} seconds")
+def get_data():
+    # Fetch data if files do not exist
+    if not os.path.exists(upguard_file_path):
+        start_time = time.time()
+        upgaurd_file = asyncio.run(get_all_vendors(upguard_file_path))
+        print(f"Upguard data retrieval time: {time.time() - start_time:.2f} seconds")
 
-if not os.path.exists(auditboard_file_path):
-    start_time = time.time()
-    get_auditboard_data(auditboard_vendors, auditboard_vendor_ids, auditboard_file_path, './data/auditboard_vendor_ids.txt')
-    print(f"Auditboard data retrieval time: {time.time() - start_time:.2f} seconds")
+    if not os.path.exists(auditboard_file_path):
+        start_time = time.time()
+        auditboard_file = get_auditboard_data(auditboard_vendors, auditboard_vendor_ids, auditboard_file_path, './data/auditboard_vendor_ids.txt')
+        print(f"Auditboard data retrieval time: {time.time() - start_time:.2f} seconds")
 
-if not os.path.exists(auditboard_user_file_path):
-    start_time = time.time()
-    get_auditboard_user_data(auditboard_users, auditboard_user_file_path)
-    print(f"Auditboard user data retrieval time: {time.time() - start_time:.2f} seconds")
+    if not os.path.exists(auditboard_user_file_path):
+        start_time = time.time()
+        auditboard_users = get_auditboard_user_data(auditboard_users, auditboard_user_file_path)
+        print(f"Auditboard user data retrieval time: {time.time() - start_time:.2f} seconds")
 
 
 def sync_auditboard_to_upgaurd():
@@ -121,9 +119,9 @@ def sync_upgaurd_to_auditboard():
 
 
 # Read data from files
-upguard_file = read_json(upguard_file_path)
-auditboard_file = read_json(auditboard_file_path)
-auditboard_users = read_json(auditboard_user_file_path)
+# upguard_file = read_json(upguard_file_path)
+# auditboard_file = read_json(auditboard_file_path)
+# auditboard_users = read_json(auditboard_user_file_path)
 
 auditboard_custom_fields = get_custom_field_options()
 auditboard_field_options = {}
@@ -134,10 +132,11 @@ for option in auditboard_custom_fields['custom_field_options']:
 
 def display_menu_for_input():
     menu_options = {
-        1: "Find vendors on Auditboard without a supplier ID",
-        2: "Sync Auditboard data (TPSP/TPSRA status and dates, TPRO owners) to Upgaurd",
-        3: "Sync Vendor URL, Upgaurd scores to Auditboard",
-        4: "Exit"
+        1: "-------------------------------------------------",
+        2: "Find vendors on Auditboard without a supplier ID",
+        3: "Sync Auditboard data (TPSP/TPSRA status and dates, TPRO owners) to Upgaurd",
+        4: "Sync Vendor URL, Upgaurd scores to Auditboard",
+        5: "Exit"
     }
 
     print("Select an option:")
@@ -148,33 +147,46 @@ def display_menu_for_input():
     return choice
 
 # Interactive menu
-while True:
-    choice = display_menu_for_input()
+# while True:
+#     choice = display_menu_for_input()
 
-    if choice == '1':
-        try:
-            response = requests.get(AUDITBOARD_URL + AUDITABLE_ENTITIES, headers=HEADERS_AUDITBOARD)
-            data = response.json()
+#     if choice == '1':
+#         pass
 
-            count = 0
-            for vendor in data['auditable_entities']:
-                if not re.search(SUPPLIER_ID_PATTERN, vendor['id_string']):
-                    auditboard_vendors[vendor['id']] = vendor
-                    count += 1
+#     elif choice == '2':
+#         try:
+#             response = requests.get(AUDITBOARD_URL + AUDITABLE_ENTITIES, headers=HEADERS_AUDITBOARD)
+#             data = response.json()
 
-            write_json(auditboard_vendors, './data/auditboardDataNoSupplierId.json')
-            print(f'Processed {count} vendors without supplier IDs')
-        except requests.RequestException as e:
-            print(f"Request Exception: {e}")
+#             count = 0
+#             for vendor in data['auditable_entities']:
+#                 if not re.search(SUPPLIER_ID_PATTERN, vendor['id_string']):
+#                     auditboard_vendors[vendor['id']] = vendor
+#                     count += 1
 
-    elif choice == '2':
-        sync_auditboard_to_upgaurd()
+#             write_json(auditboard_vendors, './data/auditboardDataNoSupplierId.json')
+#             print(f'Processed {count} vendors without supplier IDs')
+#         except requests.RequestException as e:
+#             print(f"Request Exception: {e}")
 
-    elif choice == '3':
-        sync_upgaurd_to_auditboard()
+#     elif choice == '3':
+#         sync_auditboard_to_upgaurd()
 
-    elif choice == '4':
-        break
+#     elif choice == '4':
+#         sync_upgaurd_to_auditboard()
 
-    else:
-        print("Invalid option, please try again.")
+#     elif choice == '5':
+#         break
+
+#     else:
+#         print("Invalid option, please try again.")
+
+
+def lambda_handler(event, context):
+    get_data()
+    sync_auditboard_to_upgaurd()
+    sync_upgaurd_to_auditboard()
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Automation sync ran successfully')
+    }

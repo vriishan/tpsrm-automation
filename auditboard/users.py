@@ -16,3 +16,5 @@ def get_auditboard_user_data(auditboard_users, file_path):
         json.dump(auditboard_users, file)
 
     print(f"Processed {len(data['users'])} users as auditbord users")
+
+    return auditboard_users

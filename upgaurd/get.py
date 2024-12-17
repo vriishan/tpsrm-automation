@@ -73,7 +73,10 @@ async def get_all_vendors(file_path, concurrency_limit=100):
                 if supplier_ids:
                     for id in supplier_ids.split(','):
                         vendor_details[id.strip()] = vendor
-                
+    
     with open(file_path, 'w') as json_file:
         json.dump(vendor_details, json_file)
+        
+    return vendor_details
+    
 
